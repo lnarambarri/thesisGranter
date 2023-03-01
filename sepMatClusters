@@ -1,7 +1,7 @@
 # sortFile is file generated after making heatmaps with dvera's genmat matHeatmap, these files are saved as sorting.tsv and have cluster number associated with gene name
 # listMat is the list of matricesm .mat10 files generated with dvera's genmat matMake that were used to generate the heatmaps and the resulting sorting.tsv
 
-sepMatClusters = function(sortFile, listMat)
+sepMatClusters = function(sortFile, listMat){
 
 # Requires library(tidyverse)
 
@@ -31,4 +31,4 @@ for (mat_file in mat_files) {
   }
   
 }
-
+}
