@@ -1,0 +1,34 @@
+# sortFile is file generated after making heatmaps with dvera's genmat matHeatmap, these files are saved as sorting.tsv and have cluster number associated with gene name
+# listMat is the list of matricesm .mat10 files generated with dvera's genmat matMake that were used to generate the heatmaps and the resulting sorting.tsv
+
+sepMatClusters = function(sortFile, listMat)
+
+# Requires library(tidyverse)
+
+# Read the input files
+tsv_file <- read_tsv(sortFile)
+mat_files <- list.files(listMat)
+
+# Loop over each mat file
+for (mat_file in mat_files) {
+  
+  # Read the mat file
+  mat_data <- read.table(mat_file, header = FALSE, sep = "\t")
+  
+  # Rename the first column to "gene"
+  names(mat_data)[1] <- "gene"
+  
+  # Join the mat data with the tsv data based on the "gene" column
+  joined_data <- inner_join(mat_data, tsv_file, by = "gene")
+  
+  # Split the joined data by the "group1" column
+  grouped_data <- split(joined_data, f = joined_data$group1)
+  
+  # Write the grouped data to separate files
+  for (i in names(grouped_data)) {
+    output_file <- paste0(i, "_average_", mat_file)
+    write.table(grouped_data[[i]][, -c((ncol(grouped_data[[i]])-3):ncol(grouped_data[[i]]))], file = output_file, row.names = FALSE, col.names = FALSE, sep = "\t")
+  }
+  
+}
+
