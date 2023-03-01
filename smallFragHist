@@ -1,0 +1,74 @@
+# Code developed my Mahdi Khadem
+
+smallFragHist = function(bedFiles, SizeCutoff = 120, SepFiles = TRUE, HistPlot = TRUE, HistBinCount = 100 ,threads = getOption("threads", 1L)){
+        numfiles <- length(bedFiles)
+        bednames <- basename(removeext(bedFiles))
+        
+        if (SepFiles==TRUE){
+                print('making small and large bed files...')
+                outnameS <- lapply(1:numfiles, function(i){
+                        paste0(bednames[i], "_", "SmallerThan", "_", SizeCutoff, ".bed")
+                })
+                outnameL <- lapply(1:numfiles, function(i){
+                        paste0(bednames[i], "_", "LargerThan", "_", SizeCutoff, ".bed")
+                })
+                cmdstringL <- unlist(lapply(1:numfiles, function(i) {
+                        paste("awk '{ l=$3-$2; ", paste0("if(l >=", 
+                                                         SizeCutoff, 
+                                                         "){ print $0 > \"", outnameL[[i]], "\" }", 
+                                                         collapse = ""), "}' OFS='\t'", bedFiles[i])
+                }))
+                cmdstringS<- unlist(lapply(1:numfiles, function(i) {
+                        paste("awk '{ l=$3-$2; ", paste0("if(l <=", 
+                                                         SizeCutoff, 
+                                                         "){ print $0 > \"", outnameS[[i]], "\" }", 
+                                                         collapse = ""), "}' OFS='\t'", bedFiles[i])
+                }))
+                res1 <- cmdRun(cmdstringL, threads)
+                print(unlist(outnameL))
+                res2 <- cmdRun(cmdstringS, threads)
+                print(unlist(outnameS))
+        }
+        if (HistPlot==TRUE){
+                print('making histograms...')
+                library(ggplot2)
+                library(genmat)
+                FreqFileNam <- lapply(1:numfiles, function(i){
+                        paste0(bednames[i], "_", "freqfile.bed")
+                })
+                cmdstringFreq = unlist(lapply(1:numfiles, function(i) {
+                        paste("awk '{ print$3-$2", paste0(" > \"", FreqFileNam[[i]], "\"", 
+                                                         collapse = ""), "}' ", bedFiles[i])
+                }))      
+                res3 <- cmdRun(cmdstringFreq, threads)
+                for(i in 1:numfiles){
+                        freqfl <- read.table(FreqFileNam[[i]]) 
+                        colnames(freqfl) <- 'fragment'
+                        freqfl <- transform(freqfl,group= ifelse(freqfl$fragment <= SizeCutoff, "small", "large"))
+                        SmallFragCount = nrow(freqfl[freqfl$group =="small",])
+                        LargeFragCount = nrow(freqfl[freqfl$group =="large",])
+                        Key0 <- paste0('Cutoff = ', SizeCutoff)
+                        Key1 <- paste0('#Small (',SmallFragCount,")")
+                        Key2 <- paste0('#Large (',LargeFragCount,")")
+                        Key3 <- paste0('#Total (', nrow(freqfl),")")
+                        pl <- ggplot(freqfl, aes(x=fragment, color=group)) + 
+                                geom_histogram(aes(y=..count..) , bins=HistBinCount)+
+                                geom_vline(xintercept = SizeCutoff, size=1) +
+                                annotate(geom = 'text', x=Inf, y=Inf, label = paste0(Key0, "\n",Key1, "\n",Key2, '\n', Key3), hjust = 1, vjust = 1, size=4)+
+                                labs (x = "fragment size", y = "count") +
+                                theme(axis.text.x = element_text(size=15),
+                                      axis.text.y = element_text(size=15),
+                                      axis.title.x = element_text(size=18, hjust = 0.5), 
+                                      axis.title.y = element_text(size=18, hjust = 0.5),
+                                      legend.text=element_text(size=15),
+                                      panel.background = element_blank(),
+                                      axis.line = element_line(colour = "black"))
+                        file_name = paste0(bednames[[i]],'_cutoff_',SizeCutoff,'_BinCount_',HistBinCount,'.png', collapse = "")
+                        png(file_name, width = 7, height = 7,units = "in",res = 500)
+                        print(pl)
+                        dev.off()
+                        print(file_name)
+                }
+                res4 = cmdRun("rm *freqfile*", threads)
+        }
+}
