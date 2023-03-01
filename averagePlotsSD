@@ -1,0 +1,71 @@
+# cmat name of the cluster file (product of sepMatCluster) of the control condition, i.e. 1_average_Sham file
+# emat name of the cluster file (product of sepMatCluster) of the experimental condition, i.e. 1_average_TBI file
+# controlName is the term used to describe the condition of cmat, i.e. Sham
+# variableName is the term used to describe the condition of emat, i.e. TBI
+# cluster_color is the color you would like used in the plot, give it the hex code that matches the cluster color in the heatmaps
+# plotTitle is the ttle of the plot generated
+# yaxMin minimum y-axis value
+# yaxMax maximum y-axis value
+
+
+averagePlotsSD = function(cmat, emat, controlName, variableName, cluster_color, plotTitle, yaxMin, yaxMax){
+
+# requires library(ggplot2)
+# requires library(dplyr)
+
+# Read in the first matrix file
+mat1 <- read.delim(cmat, header=FALSE, sep="\t")
+
+# Replace Inf in data by NA
+mat1<- do.call(data.frame,                     
+               lapply(mat1,
+                      function(x) replace(x, is.infinite(x), NA)))
+
+# Calculate the column means of the first matrix
+means1 <- colMeans(mat1[,2:ncol(mat1)], na.rm=TRUE)
+
+
+# Create a data frame with the means and a column indicating the type of measurement
+df <- data.frame(x = 1:length(means1), y = means1, type = controlName)
+
+# Read in the second matrix file
+mat2 <- read.delim(emat, header=FALSE, sep="\t")
+
+# Replace Inf in data by NA
+mat2<- do.call(data.frame,                     
+                   lapply(mat2,
+                          function(x) replace(x, is.infinite(x), NA)))
+
+
+# Calculate the column means of the second matrix
+means2 <- colMeans(mat2[,2:ncol(mat2)], na.rm=TRUE)
+
+# Add the means to the data frame
+df <- rbind(df, data.frame(x = 1:length(means2), y = means2, type = variableName))
+
+# Create a data frame with the means and a column indicating the type of measurement
+df <- data.frame(x = seq(0, by = 10, length.out = length(means1)), y = means1, type = controlName)
+
+# Add the means to the data frame
+df <- rbind(df, data.frame(x = seq(0, by = 10, length.out = length(means2)), y = means2, type = variableName))
+
+# Perform t-tests on each genomic region
+p_values <- sapply(2:ncol(mat1), function(i) {
+  t.test(mat1[,i], mat2[,i], na.rm=TRUE)$p.value
+})
+
+# Highlight significant areas
+df$highlight <- ifelse(p_values < 0.05, "Significant", "Not significant")
+
+# Plot the means using ggplot2
+ggplot(df, aes(x = x, y = y, color = type)) +
+  geom_line(size = 1, aes(linetype = type)) +
+  geom_rect(aes(xmin = x - 5, xmax = x + 5, ymin = -Inf, ymax = Inf, fill = highlight),
+            data = filter(df, highlight == "Significant"), alpha = 0.3) +
+  labs(x = "Genomic region", y = "Signal", title = plotTitle) +
+  scale_y_continuous(limits = c(yaxMin, yaxMax)) +
+  scale_color_manual(values = c(cluster_color, cluster_color)) +
+  scale_linetype_manual(values = c("solid", "dotted")) +
+  scale_fill_manual(values = c("#FF0000")) +
+  theme_classic()
+}
