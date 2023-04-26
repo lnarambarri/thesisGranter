@@ -7,7 +7,7 @@ library(tidyverse)
 
 # Read the input files
 tsv_file <- read_tsv(sortFile)
-mat_files <- list.files(listMat)
+mat_files <- listMat
 
 # Loop over each mat file
 for (mat_file in mat_files) {
