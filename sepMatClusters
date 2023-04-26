@@ -3,7 +3,7 @@
 
 sepMatClusters = function(sortFile, listMat){
 
-# Requires library(tidyverse)
+library(tidyverse)
 
 # Read the input files
 tsv_file <- read_tsv(sortFile)
