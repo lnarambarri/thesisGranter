@@ -11,7 +11,7 @@
 averagePlots = function(cmat, emat, controlName, variableName, cluster_color, plotTitle, yaxMin, yaxMax){
 
 
-# Requireslibrary(ggplot2)
+library(ggplot2)
 
 # Read in the first matrix file
 mat1 <- read.delim(cmat, header=FALSE, sep="\t")
