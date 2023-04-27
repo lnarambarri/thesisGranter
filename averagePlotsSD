@@ -57,15 +57,15 @@ p_values <- sapply(2:ncol(mat1), function(i) {
 # Highlight significant areas
 df$highlight <- ifelse(p_values < 0.05, "Significant", "Not significant")
 
-# Plot the means using ggplot2
-ggplot(df, aes(x = x, y = y, color = type)) +
-  geom_line(size = 1, aes(linetype = type)) +
-  geom_rect(aes(xmin = x - 5, xmax = x + 5, ymin = -Inf, ymax = Inf, fill = highlight),
-            data = filter(df, highlight == "Significant"), alpha = 0.3) +
-  labs(x = "Genomic region", y = "Signal", title = plotTitle) +
-  scale_y_continuous(limits = c(yaxMin, yaxMax)) +
-  scale_color_manual(values = c(cluster_color, cluster_color)) +
-  scale_linetype_manual(values = c("solid", "dotted")) +
-  scale_fill_manual(values = c("#FF0000")) +
-  theme_classic()
+  # Plot the means using ggplot2
+  ggplot(df, aes(x = x, y = y, color = type)) +
+    geom_line(size = 1, aes(linetype = type)) +
+    geom_segment(data = filter(df, highlight == "Significant"), 
+                 aes(x = x, xend = x, y = yaxMin, yend = yaxMin + 0.05 * (yaxMax - yaxMin)),
+                 color = "darkred", size = 1) +
+    labs(x = "Genomic region", y = "Signal", title = plotTitle) +
+    scale_y_continuous(limits = c(yaxMin, yaxMax)) +
+    scale_color_manual(values = c(cluster_color, cluster_color)) +
+    scale_linetype_manual(values = c("solid", "dotted")) +
+    theme_classic()
 }
